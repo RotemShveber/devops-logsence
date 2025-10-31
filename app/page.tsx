@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { LogSource } from '@/lib/types';
+import StatCard from '@/components/dashboard/StatCard';
+import CategoryChart from '@/components/dashboard/CategoryChart';
+import ErrorCard from '@/components/dashboard/ErrorCard';
+import LogCollectionForm from '@/components/dashboard/LogCollectionForm';
+import { Activity, AlertTriangle, FileText, TrendingUp } from 'lucide-react';
 
 interface Analytics {
   totalLogs: number;
@@ -36,159 +41,104 @@ export default function Dashboard() {
     }
   };
 
-  const collectLogs = async () => {
-    if (!selectedSource) {
-      alert('Please select a log source');
-      return;
-    }
-
+  const collectLogs = async (source: LogSource, config: any) => {
     setCollecting(true);
     try {
-      const config: any = {};
-
-      // Add source-specific config prompts
-      if (selectedSource === LogSource.JENKINS) {
-        const baseUrl = prompt('Enter Jenkins URL:');
-        if (!baseUrl) return;
-        config.baseUrl = baseUrl;
-      } else if (selectedSource === LogSource.EC2) {
-        const region = prompt('Enter AWS region (e.g., us-east-1):');
-        if (!region) return;
-        config.region = region;
-      }
-
       const response = await fetch('/api/logs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source: selectedSource, config }),
+        body: JSON.stringify({ source, config }),
       });
 
       const data = await response.json();
-      alert(`Collected and analyzed ${data.analyzed} logs`);
-      fetchAnalytics();
+      await fetchAnalytics();
     } catch (error) {
       console.error('Error collecting logs:', error);
-      alert('Failed to collect logs');
     } finally {
       setCollecting(false);
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-600';
-      case 'error': return 'bg-red-500';
-      case 'warning': return 'bg-yellow-500';
-      case 'info': return 'bg-blue-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      network: 'bg-purple-500',
-      permissions: 'bg-orange-500',
-      resource: 'bg-red-500',
-      config: 'bg-blue-500',
-      application: 'bg-green-500',
-      security: 'bg-pink-500',
-      performance: 'bg-yellow-500',
-      unknown: 'bg-gray-500',
-    };
-    return colors[category] || 'bg-gray-500';
-  };
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">DevOps LogSense</h1>
-          <p className="text-gray-400">AI-Powered Log Analysis & Monitoring</p>
-        </div>
-
-        {/* Collection Controls */}
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Collect Logs</h2>
-          <div className="flex gap-4">
-            <select
-              value={selectedSource}
-              onChange={(e) => setSelectedSource(e.target.value as LogSource)}
-              className="bg-gray-700 text-white px-4 py-2 rounded-lg flex-1"
-            >
-              <option value="">Select Source</option>
-              <option value={LogSource.KUBERNETES}>Kubernetes</option>
-              <option value={LogSource.DOCKER}>Docker</option>
-              <option value={LogSource.JENKINS}>Jenkins</option>
-              <option value={LogSource.EC2}>AWS EC2</option>
-            </select>
-            <button
-              onClick={collectLogs}
-              disabled={collecting || !selectedSource}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-2 rounded-lg font-medium"
-            >
-              {collecting ? 'Collecting...' : 'Collect Logs'}
-            </button>
-            <button
-              onClick={fetchAnalytics}
-              disabled={loading}
-              className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 px-6 py-2 rounded-lg font-medium"
-            >
-              Refresh
-            </button>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <Activity className="text-blue-400" size={32} />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                DevOps LogSense
+              </h1>
+              <p className="text-gray-400">AI-Powered Log Analysis & Monitoring</p>
+            </div>
           </div>
         </div>
 
+        {/* Collection Controls */}
+        <LogCollectionForm
+          onCollect={collectLogs}
+          onRefresh={fetchAnalytics}
+          collecting={collecting}
+          loading={loading}
+        />
+
         {loading && !analytics ? (
           <div className="text-center py-12">
-            <div className="text-xl">Loading analytics...</div>
+            <div className="animate-pulse">
+              <Activity className="mx-auto text-blue-400 animate-spin" size={48} />
+              <p className="text-xl mt-4 text-gray-400">Loading analytics...</p>
+            </div>
           </div>
         ) : analytics ? (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-gray-400 text-sm mb-2">Total Logs</h3>
-                <p className="text-3xl font-bold">{analytics.totalLogs}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-gray-400 text-sm mb-2">Errors</h3>
-                <p className="text-3xl font-bold text-red-500">{analytics.errorCount}</p>
-              </div>
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-gray-400 text-sm mb-2">Warnings</h3>
-                <p className="text-3xl font-bold text-yellow-500">{analytics.warningCount}</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-8">
+              <StatCard
+                title="Total Logs"
+                value={analytics.totalLogs}
+                icon={FileText}
+                color="blue"
+              />
+              <StatCard
+                title="Errors"
+                value={analytics.errorCount}
+                icon={AlertTriangle}
+                color="red"
+              />
+              <StatCard
+                title="Warnings"
+                value={analytics.warningCount}
+                icon={TrendingUp}
+                color="yellow"
+              />
             </div>
 
-            {/* Categories */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Error Categories</h3>
-                <div className="space-y-3">
-                  {Object.entries(analytics.categorySummary)
-                    .filter(([_, count]) => count > 0)
-                    .sort(([_, a], [__, b]) => b - a)
-                    .map(([category, count]) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${getCategoryColor(category)}`}></div>
-                          <span className="capitalize">{category}</span>
-                        </div>
-                        <span className="font-semibold">{count}</span>
-                      </div>
-                    ))}
-                </div>
+            {/* Categories & Sources */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-xl">
+                <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                  <div className="w-1 h-6 bg-purple-500 rounded-full"></div>
+                  Error Categories
+                </h3>
+                <CategoryChart data={analytics.categorySummary} />
               </div>
 
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">Log Sources</h3>
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-xl">
+                <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                  <div className="w-1 h-6 bg-blue-500 rounded-full"></div>
+                  Log Sources
+                </h3>
                 <div className="space-y-3">
                   {Object.entries(analytics.sourceSummary)
                     .filter(([_, count]) => count > 0)
+                    .sort(([_, a], [__, b]) => b - a)
                     .map(([source, count]) => (
-                      <div key={source} className="flex items-center justify-between">
-                        <span className="capitalize">{source}</span>
-                        <span className="font-semibold">{count}</span>
+                      <div key={source} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors">
+                        <span className="capitalize font-medium">{source}</span>
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold">{count}</span>
                       </div>
                     ))}
                 </div>
@@ -197,13 +147,16 @@ export default function Dashboard() {
 
             {/* Top Error Types */}
             {analytics.topErrorTypes.length > 0 && (
-              <div className="bg-gray-800 rounded-lg p-6 mb-8">
-                <h3 className="text-xl font-semibold mb-4">Top Error Types</h3>
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-xl mb-8">
+                <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                  <div className="w-1 h-6 bg-red-500 rounded-full"></div>
+                  Top Error Types
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {analytics.topErrorTypes.map(({ type, count }) => (
-                    <div key={type} className="flex justify-between items-center bg-gray-700 p-3 rounded">
-                      <span className="font-mono text-sm">{type}</span>
-                      <span className="bg-red-600 px-3 py-1 rounded text-sm">{count}</span>
+                    <div key={type} className="flex justify-between items-center bg-gray-700/50 p-4 rounded-lg hover:bg-gray-700 transition-colors border border-gray-600">
+                      <span className="font-mono text-sm text-gray-200">{type}</span>
+                      <span className="bg-gradient-to-r from-red-600 to-red-700 px-3 py-1 rounded-full text-sm font-semibold">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -211,47 +164,45 @@ export default function Dashboard() {
             )}
 
             {/* Recent Errors */}
-            <div className="bg-gray-800 rounded-lg p-6">
-              <h3 className="text-xl font-semibold mb-4">Recent Errors</h3>
-              <div className="space-y-3">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-xl">
+              <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                <div className="w-1 h-6 bg-orange-500 rounded-full"></div>
+                Recent Errors
+              </h3>
+              <div className="space-y-4">
                 {analytics.recentErrors.length === 0 ? (
-                  <p className="text-gray-400 text-center py-8">No errors found</p>
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
+                      <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-400">No errors found</p>
+                  </div>
                 ) : (
                   analytics.recentErrors.map((log, index) => (
-                    <div key={index} className="bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex gap-2">
-                          <span className={`px-2 py-1 text-xs rounded ${getSeverityColor(log.severity)}`}>
-                            {log.severity}
-                          </span>
-                          <span className={`px-2 py-1 text-xs rounded ${getCategoryColor(log.category)}`}>
-                            {log.category}
-                          </span>
-                          <span className="px-2 py-1 text-xs rounded bg-gray-600">
-                            {log.source}
-                          </span>
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {new Date(log.timestamp).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="font-mono text-sm mb-2">{log.message}</p>
-                      {log.suggestedFix && (
-                        <div className="mt-2 p-2 bg-blue-900/30 rounded border border-blue-700">
-                          <p className="text-xs text-blue-300">
-                            <strong>Suggested Fix:</strong> {log.suggestedFix}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <ErrorCard
+                      key={index}
+                      severity={log.severity}
+                      category={log.category}
+                      source={log.source}
+                      message={log.message}
+                      timestamp={log.timestamp}
+                      suggestedFix={log.suggestedFix}
+                      index={index}
+                    />
                   ))
                 )}
               </div>
             </div>
           </>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No data available. Start by collecting logs.</p>
+          <div className="text-center py-16 mt-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-500/20 rounded-full mb-6">
+              <FileText className="text-blue-400" size={40} />
+            </div>
+            <p className="text-xl text-gray-300 mb-2">No data available</p>
+            <p className="text-gray-400">Start by collecting logs from your sources</p>
           </div>
         )}
       </div>
