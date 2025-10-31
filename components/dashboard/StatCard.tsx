@@ -12,6 +12,7 @@ interface StatCardProps {
     isPositive: boolean;
   };
   color?: 'blue' | 'red' | 'yellow' | 'green' | 'purple';
+  onClick?: () => void;
 }
 
 const colorClasses = {
@@ -22,7 +23,7 @@ const colorClasses = {
   purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/50 text-purple-400',
 };
 
-export default function StatCard({ title, value, icon: Icon, trend, color = 'blue' }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, trend, color = 'blue', onClick }: StatCardProps) {
   const colors = colorClasses[color];
 
   return (
@@ -30,7 +31,8 @@ export default function StatCard({ title, value, icon: Icon, trend, color = 'blu
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${colors} border backdrop-blur-sm p-6 hover:scale-105 transition-transform duration-200`}
+      onClick={onClick}
+      className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${colors} border backdrop-blur-sm p-6 hover:scale-105 transition-transform duration-200 ${onClick ? 'cursor-pointer' : ''}`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">

@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 
 interface CategoryChartProps {
   data: Record<string, number>;
+  onCategoryClick?: (category: string) => void;
 }
 
 const COLORS = {
@@ -18,11 +19,12 @@ const COLORS = {
   unknown: '#6b7280',
 };
 
-export default function CategoryChart({ data }: CategoryChartProps) {
+export default function CategoryChart({ data, onCategoryClick }: CategoryChartProps) {
   const chartData = Object.entries(data)
     .filter(([_, count]) => count > 0)
     .map(([name, value]) => ({
       name: name.charAt(0).toUpperCase() + name.slice(1),
+      originalName: name,
       value,
       color: COLORS[name as keyof typeof COLORS] || COLORS.unknown,
     }));
@@ -53,6 +55,8 @@ export default function CategoryChart({ data }: CategoryChartProps) {
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
+            onClick={(entry: any) => onCategoryClick?.(entry.originalName)}
+            cursor={onCategoryClick ? 'pointer' : 'default'}
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />

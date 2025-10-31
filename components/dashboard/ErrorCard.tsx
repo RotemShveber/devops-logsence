@@ -11,6 +11,9 @@ interface ErrorCardProps {
   timestamp: string;
   suggestedFix?: string;
   index: number;
+  onCategoryClick?: (category: string) => void;
+  onSeverityClick?: (severity: string) => void;
+  onSourceClick?: (source: string) => void;
 }
 
 const severityConfig = {
@@ -39,6 +42,9 @@ export default function ErrorCard({
   timestamp,
   suggestedFix,
   index,
+  onCategoryClick,
+  onSeverityClick,
+  onSourceClick,
 }: ErrorCardProps) {
   const severityStyle = severityConfig[severity as keyof typeof severityConfig] || severityConfig.error;
   const categoryStyle = categoryColors[category as keyof typeof categoryColors] || categoryColors.unknown;
@@ -57,15 +63,27 @@ export default function ErrorCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${severityStyle.bg}`}>
+            <button
+              onClick={() => onSeverityClick?.(severity)}
+              className={`px-2.5 py-0.5 text-xs font-medium rounded-full ${severityStyle.bg} hover:opacity-80 transition-opacity cursor-pointer`}
+              title="Click to filter by severity"
+            >
               {severity}
-            </span>
-            <span className={`px-2.5 py-0.5 text-xs font-medium rounded-md border ${categoryStyle}`}>
+            </button>
+            <button
+              onClick={() => onCategoryClick?.(category)}
+              className={`px-2.5 py-0.5 text-xs font-medium rounded-md border ${categoryStyle} hover:opacity-80 transition-opacity cursor-pointer`}
+              title="Click to filter by category"
+            >
               {category}
-            </span>
-            <span className="px-2.5 py-0.5 text-xs font-medium rounded-md bg-gray-700 text-gray-300">
+            </button>
+            <button
+              onClick={() => onSourceClick?.(source)}
+              className="px-2.5 py-0.5 text-xs font-medium rounded-md bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors cursor-pointer"
+              title="Click to filter by source"
+            >
               {source}
-            </span>
+            </button>
             <span className="flex items-center gap-1 text-xs text-gray-400 ml-auto">
               <Clock size={12} />
               {new Date(timestamp).toLocaleString()}

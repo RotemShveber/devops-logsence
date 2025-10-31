@@ -5,20 +5,30 @@ import { DockerCollector } from '@/lib/collectors/dockerCollector';
 import { JenkinsCollector } from '@/lib/collectors/jenkinsCollector';
 import { EC2Collector } from '@/lib/collectors/ec2Collector';
 import { LogSource, RawLog } from '@/lib/types';
-
-// In-memory storage (replace with proper database in production)
-let logsCache: any[] = [];
+import { logsStore } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const source = searchParams.get('source');
-  const limit = parseInt(searchParams.get('limit') || '100');
+  const category = searchParams.get('category');
+  const severity = searchParams.get('severity');
+  const limit = parseInt(searchParams.get('limit') || '1000');
 
-  let filteredLogs = logsCache;
+  let filteredLogs = logsStore.getAll();
 
+  // Apply filters
   if (source) {
-    filteredLogs = logsCache.filter(log => log.source === source);
+    filteredLogs = filteredLogs.filter(log => log.source === source);
   }
+  if (category) {
+    filteredLogs = filteredLogs.filter(log => log.category === category);
+  }
+  if (severity) {
+    filteredLogs = filteredLogs.filter(log => log.severity === severity);
+  }
+
+  // Sort by timestamp (most recent first)
+  filteredLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return NextResponse.json({
     logs: filteredLogs.slice(0, limit),
@@ -115,12 +125,7 @@ export async function POST(request: NextRequest) {
     const analyzedLogs = LogAnalyzer.analyzeBatch(rawLogs);
 
     // Store in cache (replace with database)
-    logsCache.push(...analyzedLogs);
-
-    // Keep only last 10000 logs
-    if (logsCache.length > 10000) {
-      logsCache = logsCache.slice(-10000);
-    }
+    logsStore.add(analyzedLogs);
 
     return NextResponse.json({
       collected: rawLogs.length,

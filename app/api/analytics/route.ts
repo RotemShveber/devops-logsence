@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnalyzedLog, LogCategory, LogSeverity, LogSource } from '@/lib/types';
-
-// This would come from your database in production
-// For now, we'll import from the logs route cache
-import '../logs/route';
+import { logsStore } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch logs from the API
-    const response = await fetch(`${request.nextUrl.origin}/api/logs?limit=1000`);
-    const data = await response.json();
-    const logs: AnalyzedLog[] = data.logs || [];
+    // Get logs from the cache
+    const logs: AnalyzedLog[] = logsStore.getAll();
 
     // Calculate analytics
     const totalLogs = logs.length;

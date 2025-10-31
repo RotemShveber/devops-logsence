@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { LogSource } from '@/lib/types';
 import StatCard from '@/components/dashboard/StatCard';
 import CategoryChart from '@/components/dashboard/CategoryChart';
@@ -19,6 +20,7 @@ interface Analytics {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedSource, setSelectedSource] = useState<LogSource | ''>('');
@@ -57,6 +59,11 @@ export default function Dashboard() {
     } finally {
       setCollecting(false);
     }
+  };
+
+  // Navigate to filtered view
+  const navigateToFiltered = (type: 'source' | 'category' | 'severity', value: string) => {
+    router.push(`/logs?${type}=${value}`);
   };
 
   return (
@@ -101,18 +108,21 @@ export default function Dashboard() {
                 value={analytics.totalLogs}
                 icon={FileText}
                 color="blue"
+                onClick={() => router.push('/logs')}
               />
               <StatCard
                 title="Errors"
                 value={analytics.errorCount}
                 icon={AlertTriangle}
                 color="red"
+                onClick={() => navigateToFiltered('severity', 'error')}
               />
               <StatCard
                 title="Warnings"
                 value={analytics.warningCount}
                 icon={TrendingUp}
                 color="yellow"
+                onClick={() => navigateToFiltered('severity', 'warning')}
               />
             </div>
 
@@ -123,7 +133,10 @@ export default function Dashboard() {
                   <div className="w-1 h-6 bg-purple-500 rounded-full"></div>
                   Error Categories
                 </h3>
-                <CategoryChart data={analytics.categorySummary} />
+                <CategoryChart
+                  data={analytics.categorySummary}
+                  onCategoryClick={(category) => navigateToFiltered('category', category)}
+                />
               </div>
 
               <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 border border-gray-700 shadow-xl">
@@ -136,10 +149,16 @@ export default function Dashboard() {
                     .filter(([_, count]) => count > 0)
                     .sort(([_, a], [__, b]) => b - a)
                     .map(([source, count]) => (
-                      <div key={source} className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition-colors">
-                        <span className="capitalize font-medium">{source}</span>
-                        <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold">{count}</span>
-                      </div>
+                      <button
+                        key={source}
+                        onClick={() => navigateToFiltered('source', source)}
+                        className="w-full flex items-center justify-between p-3 rounded-lg transition-all bg-gray-700/50 hover:bg-blue-600 hover:ring-2 hover:ring-blue-400 group"
+                      >
+                        <span className="capitalize font-medium group-hover:text-white">{source}</span>
+                        <span className="px-3 py-1 rounded-full font-semibold bg-blue-500/20 text-blue-300 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                          {count}
+                        </span>
+                      </button>
                     ))}
                 </div>
               </div>
@@ -180,7 +199,7 @@ export default function Dashboard() {
                     <p className="text-gray-400">No errors found</p>
                   </div>
                 ) : (
-                  analytics.recentErrors.map((log, index) => (
+                  analytics.recentErrors.slice(0, 10).map((log, index) => (
                     <ErrorCard
                       key={index}
                       severity={log.severity}
@@ -190,10 +209,20 @@ export default function Dashboard() {
                       timestamp={log.timestamp}
                       suggestedFix={log.suggestedFix}
                       index={index}
+                      onCategoryClick={(category) => navigateToFiltered('category', category)}
+                      onSeverityClick={(severity) => navigateToFiltered('severity', severity)}
+                      onSourceClick={(source) => navigateToFiltered('source', source)}
                     />
                   ))
                 )}
               </div>
+              {analytics.recentErrors.length > 10 && (
+                <div className="mt-6 text-center">
+                  <p className="text-gray-400 text-sm">
+                    Showing 10 of {analytics.recentErrors.length} errors
+                  </p>
+                </div>
+              )}
             </div>
           </>
         ) : (
