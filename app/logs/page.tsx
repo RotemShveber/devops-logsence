@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import ErrorCard from '@/components/dashboard/ErrorCard';
 import { ArrowLeft, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -66,26 +67,14 @@ function FilteredLogsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-8">
-      <div className="max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="p-8 text-white">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-4 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="font-medium">Back to Dashboard</span>
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Filter className="text-blue-400" size={32} />
-            </div>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                {getFilterTitle()}
-              </h1>
+              <h1 className="text-3xl font-bold text-white mb-2">{getFilterTitle()}</h1>
               <p className="text-gray-400">
                 {loading ? 'Loading...' : `${logs.length} log${logs.length !== 1 ? 's' : ''} found`}
               </p>
@@ -160,22 +149,25 @@ function FilteredLogsContent() {
             ))}
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 
 export default function FilteredLogsPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-8">
-        <div className="max-w-7xl mx-auto text-center py-12">
-          <div className="animate-pulse">
-            <Filter className="mx-auto text-blue-400 animate-spin" size={48} />
-            <p className="text-xl mt-4 text-gray-400">Loading...</p>
+      <DashboardLayout>
+        <div className="p-8 text-white">
+          <div className="max-w-7xl mx-auto text-center py-12">
+            <div className="animate-pulse">
+              <Filter className="mx-auto text-blue-400 animate-spin" size={48} />
+              <p className="text-xl mt-4 text-gray-400">Loading...</p>
+            </div>
           </div>
         </div>
-      </div>
+      </DashboardLayout>
     }>
       <FilteredLogsContent />
     </Suspense>

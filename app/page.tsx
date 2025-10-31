@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogSource } from '@/lib/types';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import StatCard from '@/components/dashboard/StatCard';
 import CategoryChart from '@/components/dashboard/CategoryChart';
 import ErrorCard from '@/components/dashboard/ErrorCard';
 import LogCollectionForm from '@/components/dashboard/LogCollectionForm';
-import { Activity, AlertTriangle, FileText, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, FileText, TrendingUp, Server, Cpu, HardDrive, Zap } from 'lucide-react';
 
 interface Analytics {
   totalLogs: number;
@@ -67,19 +68,23 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4 sm:p-8">
-      <div className="max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="p-8 text-white">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Activity className="text-blue-400" size={32} />
-            </div>
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                DevOps LogSense
-              </h1>
-              <p className="text-gray-400">AI-Powered Log Analysis & Monitoring</p>
+              <h1 className="text-3xl font-bold text-white mb-2">Dashboard Overview</h1>
+              <p className="text-gray-400">Real-time monitoring and log analysis</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-green-400 font-medium">System Online</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -102,7 +107,7 @@ export default function Dashboard() {
         ) : analytics ? (
           <>
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-8">
               <StatCard
                 title="Total Logs"
                 value={analytics.totalLogs}
@@ -123,6 +128,12 @@ export default function Dashboard() {
                 icon={TrendingUp}
                 color="yellow"
                 onClick={() => navigateToFiltered('severity', 'warning')}
+              />
+              <StatCard
+                title="Active Sources"
+                value={Object.values(analytics.sourceSummary).filter(count => count > 0).length}
+                icon={Server}
+                color="purple"
               />
             </div>
 
@@ -234,7 +245,8 @@ export default function Dashboard() {
             <p className="text-gray-400">Start by collecting logs from your sources</p>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
