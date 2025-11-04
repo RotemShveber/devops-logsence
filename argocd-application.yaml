@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-logsense
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/RotemShveber/devops-logsence.git
+    targetRevision: main
+    path: helm/devops-logsense
+    helm:
+      values: |
+        image:
+          repository: your-registry/devops-logsense
+          tag: "0.1.0"
+
+        replicaCount: 1
+
+        service:
+          type: ClusterIP
+          port: 80
+
+        ingress:
+          enabled: false
+
+        kubernetes:
+          enabled: true
+
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

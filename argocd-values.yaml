@@ -1,0 +1,96 @@
+# ArgoCD Values Override File
+# This file can be referenced in ArgoCD Application
+
+image:
+  repository: your-registry/devops-logsense  # CHANGE THIS to your Docker registry
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+# Uncomment if you need image pull secrets
+# imagePullSecrets:
+#   - name: regcred
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
+  # Uncomment to enable ingress
+  # className: nginx
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  # hosts:
+  #   - host: devops-logsense.yourdomain.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+  # tls:
+  #   - secretName: devops-logsense-tls
+  #     hosts:
+  #       - devops-logsense.yourdomain.com
+
+# Enable Kubernetes log collection (default)
+kubernetes:
+  enabled: true
+
+# Enable Docker log collection (requires host Docker socket)
+docker:
+  enabled: false
+  # socketPath: /var/run/docker.sock
+  # hostPath: /var/run/docker.sock
+
+# Enable Jenkins integration
+jenkins:
+  enabled: false
+  # url: "http://jenkins.default.svc.cluster.local:8080"
+  # username: "admin"
+  # apiToken: "your-jenkins-api-token"
+
+# Enable AWS CloudWatch integration
+aws:
+  enabled: false
+  # region: us-east-1
+  # For IRSA (recommended):
+  # serviceAccount:
+  #   annotations:
+  #     eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/devops-logsense-role
+  # For access keys (not recommended):
+  # accessKeyId: "your-aws-access-key"
+  # secretAccessKey: "your-aws-secret-key"
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "pods/log", "events", "namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+      verbs: ["get", "list"]
+
+env:
+  nodeEnv: production
+  nextPublicApiUrl: ""
