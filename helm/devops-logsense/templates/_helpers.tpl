@@ -33,7 +33,7 @@ Common labels
 */}}
 {{- define "devops-logsense.labels" -}}
 helm.sh/chart: {{ include "devops-logsense.chart" . }}
-{{ include "devops-logsense.selectorLabels" . }}
+{{- include "devops-logsense.selectorLabels" . | nindent 0 }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}

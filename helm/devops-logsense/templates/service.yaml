@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ include "devops-logsense.fullname" . }}
   labels:
-{{ include "devops-logsense.labels" . | indent 4 }}
+    {{- include "devops-logsense.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +12,4 @@ spec:
     protocol: TCP
     name: http
   selector:
-{{ include "devops-logsense.selectorLabels" . | indent 4 }}
+    {{- include "devops-logsense.selectorLabels" . | nindent 4 }}
