@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "devops-logsense.fullname" . }}
+  labels:
+    {{- include "devops-logsense.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "devops-logsense.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "devops-logsense.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "devops-logsense.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.env.nodeEnv | quote }}
+        - name: PORT
+          value: "3000"
+        - name: HOSTNAME
+          value: "0.0.0.0"
+        - name: NEXT_PUBLIC_API_URL
+          value: {{ .Values.env.nextPublicApiUrl | default (printf "http://%s.%s.svc.cluster.local" (include "devops-logsense.fullname" .) .Release.Namespace) | quote }}
+        {{- if .Values.jenkins.enabled }}
+        - name: JENKINS_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: jenkins-url
+              optional: true
+        - name: JENKINS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: jenkins-username
+              optional: true
+        - name: JENKINS_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: jenkins-api-token
+              optional: true
+        {{- end }}
+        {{- if .Values.aws.enabled }}
+        - name: AWS_REGION
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: aws-region
+              optional: true
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: aws-access-key-id
+              optional: true
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "devops-logsense.fullname" . }}-secrets
+              key: aws-secret-access-key
+              optional: true
+        {{- end }}
+        {{- if .Values.docker.enabled }}
+        - name: DOCKER_SOCKET_PATH
+          value: {{ .Values.docker.socketPath | quote }}
+        {{- end }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.docker.enabled }}
+        volumeMounts:
+        - name: docker-socket
+          mountPath: {{ .Values.docker.socketPath }}
+        {{- end }}
+      {{- if .Values.docker.enabled }}
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: {{ .Values.docker.hostPath }}
+          type: Socket
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

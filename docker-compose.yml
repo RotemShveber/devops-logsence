@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  devops-logsense:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: devops-logsense:latest
+    container_name: devops-logsense
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      # Jenkins configuration (uncomment and configure if needed)
+      # - JENKINS_URL=${JENKINS_URL:-http://jenkins:8080}
+      # - JENKINS_USERNAME=${JENKINS_USERNAME}
+      # - JENKINS_API_TOKEN=${JENKINS_API_TOKEN}
+      # AWS configuration (uncomment and configure if needed)
+      # - AWS_REGION=${AWS_REGION:-us-east-1}
+      # - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      # - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      # Uncomment to enable Docker log collection (requires Docker socket access)
+      # - /var/run/docker.sock:/var/run/docker.sock
+      # Uncomment to enable local Kubernetes access
+      # - ${HOME}/.kube/config:/home/nextjs/.kube/config:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - devops-logsense-network
+
+networks:
+  devops-logsense-network:
+    driver: bridge

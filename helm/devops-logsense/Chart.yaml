@@ -1,0 +1,18 @@
+apiVersion: v2
+name: devops-logsense
+description: AI-Powered Log Analysis & Monitoring Platform for Kubernetes, Docker, Jenkins, and AWS EC2
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - logs
+  - monitoring
+  - kubernetes
+  - docker
+  - devops
+  - analytics
+maintainers:
+  - name: DevOps LogSense Team
+home: https://github.com/your-org/devops-logsense
+sources:
+  - https://github.com/your-org/devops-logsense

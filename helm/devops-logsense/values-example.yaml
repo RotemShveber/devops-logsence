@@ -1,0 +1,173 @@
+# Example values file for DevOps LogSense
+# Copy this file and customize it for your deployment:
+# cp values-example.yaml values-custom.yaml
+
+# Docker image configuration
+image:
+  # Replace with your container registry and image name
+  repository: your-registry/devops-logsense
+  pullPolicy: IfNotPresent
+  tag: "0.1.0"
+
+# Use imagePullSecrets if your registry requires authentication
+# imagePullSecrets:
+#   - name: regcred
+
+# Number of replicas (set to 1 for development, 2+ for production)
+replicaCount: 1
+
+# Service configuration
+service:
+  type: ClusterIP  # Options: ClusterIP, NodePort, LoadBalancer
+  port: 80
+  targetPort: 3000
+
+# Ingress configuration (for external access)
+ingress:
+  enabled: true
+  className: "nginx"  # Use your ingress controller class
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: devops-logsense.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: devops-logsense-tls
+      hosts:
+        - devops-logsense.example.com
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+# Horizontal Pod Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Environment variables
+env:
+  nodeEnv: production
+  nextPublicApiUrl: ""  # Leave empty to use default service URL
+
+# Kubernetes log collection (enabled by default)
+kubernetes:
+  enabled: true
+
+# Docker log collection
+# WARNING: Enabling this mounts the host Docker socket - use with caution
+docker:
+  enabled: false
+  socketPath: /var/run/docker.sock
+  hostPath: /var/run/docker.sock
+
+# Jenkins integration
+jenkins:
+  enabled: false
+  url: "http://jenkins.default.svc.cluster.local:8080"
+  username: "admin"
+  apiToken: "your-jenkins-api-token-here"
+
+# AWS CloudWatch integration
+aws:
+  enabled: false
+  region: us-east-1
+  # It's recommended to use IRSA (IAM Roles for Service Accounts) instead of access keys
+  # For access keys, store them securely and reference them here
+  accessKeyId: ""
+  secretAccessKey: ""
+
+# RBAC configuration
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "pods/log", "events", "namespaces"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments", "replicasets", "daemonsets", "statefulsets"]
+      verbs: ["get", "list"]
+
+# ServiceAccount configuration
+serviceAccount:
+  create: true
+  annotations: {}
+    # For AWS IRSA (recommended over access keys):
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/devops-logsense-role
+  name: ""
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1001
+
+# Container security context
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Health check probes
+livenessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+# Node selector for pod placement
+nodeSelector: {}
+  # kubernetes.io/os: linux
+  # node-role.kubernetes.io/worker: "true"
+
+# Tolerations for node taints
+tolerations: []
+  # - key: "key1"
+  #   operator: "Equal"
+  #   value: "value1"
+  #   effect: "NoSchedule"
+
+# Affinity rules
+affinity: {}
+  # podAntiAffinity:
+  #   preferredDuringSchedulingIgnoredDuringExecution:
+  #   - weight: 100
+  #     podAffinityTerm:
+  #       labelSelector:
+  #         matchExpressions:
+  #         - key: app.kubernetes.io/name
+  #           operator: In
+  #           values:
+  #           - devops-logsense
+  #       topologyKey: kubernetes.io/hostname
+
+# Persistent storage (for future database integration)
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
