@@ -4,7 +4,7 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "devops-logsense.fullname" . }}
   labels:
-    {{- include "devops-logsense.labels" . | nindent 4 }}
+{{ include "devops-logsense.labels" . | indent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
