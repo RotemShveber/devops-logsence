@@ -2,6 +2,28 @@
 
 AI-Powered Log Analysis & Monitoring Platform for Kubernetes, Docker, Jenkins, and AWS EC2.
 
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Log Analysis](#log-analysis)
+- [Deployment](#deployment)
+  - [Docker Deployment](#docker-deployment)
+  - [Kubernetes Deployment with Helm](#kubernetes-deployment-with-helm)
+- [Development](#development)
+- [Future Enhancements](#future-enhancements)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
 ## Features
 
 - **Multi-Source Log Collection**: Gather logs from Kubernetes, Docker, Jenkins, and AWS EC2/CloudWatch
@@ -36,326 +58,57 @@ devops-logsense/
 │   ├── analyzers/         # Log analysis engine
 │   │   └── logAnalyzer.ts
 │   └── types/             # TypeScript type definitions
-└── components/            # React components (future)
+├── components/            # React components
+└── helm/                  # Helm chart for Kubernetes deployment
 ```
 
-## Installation
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Integrations**:
+  - Kubernetes Client (@kubernetes/client-node)
+  - Dockerode (Docker API)
+  - AWS SDK (CloudWatch Logs)
+  - Axios (Jenkins API)
+- **Deployment**: Docker, Kubernetes, Helm
+
+## Prerequisites
+
+- **Node.js** 20+ (for local development)
+- **Docker** (optional, for containerized deployment)
+- **Kubernetes** 1.19+ and **Helm** 3.x (optional, for Kubernetes deployment)
+- **kubectl** configured to access your cluster (for Kubernetes deployment)
+
+## Quick Start
 
 ### Local Development
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
-git clone <repo-url>
+git clone https://github.com/RotemShveber/devops-logsence.git
 cd devops-logsense
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Configure environment variables:
+3. **Configure environment variables:**
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
-4. Run the development server:
+4. **Run the development server:**
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Docker Deployment
-
-#### Build the Docker Image
-
-```bash
-# Build the Docker image
-docker build -t devops-logsense:latest .
+5. **Open your browser:**
 ```
-
-#### Run with Docker
-
-```bash
-# Basic run (Kubernetes log collection only)
-docker run -p 3000:3000 devops-logsense:latest
-
-# With environment variables
-docker run -p 3000:3000 \
-  -e NODE_ENV=production \
-  -e JENKINS_URL=http://jenkins:8080 \
-  -e JENKINS_USERNAME=admin \
-  -e JENKINS_API_TOKEN=your-token \
-  -e AWS_REGION=us-east-1 \
-  -e AWS_ACCESS_KEY_ID=your-key \
-  -e AWS_SECRET_ACCESS_KEY=your-secret \
-  devops-logsense:latest
-
-# With Docker socket access (for Docker log collection)
-docker run -p 3000:3000 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  devops-logsense:latest
-
-# With kubeconfig (for local Kubernetes access)
-docker run -p 3000:3000 \
-  -v ~/.kube/config:/home/nextjs/.kube/config:ro \
-  devops-logsense:latest
-```
-
-#### Using Docker Compose
-
-Create a `docker-compose.yml` file:
-
-```yaml
-version: '3.8'
-
-services:
-  devops-logsense:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - JENKINS_URL=${JENKINS_URL}
-      - JENKINS_USERNAME=${JENKINS_USERNAME}
-      - JENKINS_API_TOKEN=${JENKINS_API_TOKEN}
-      - AWS_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    volumes:
-      # Uncomment for Docker log collection
-      # - /var/run/docker.sock:/var/run/docker.sock
-      # Uncomment for local Kubernetes access
-      # - ~/.kube/config:/home/nextjs/.kube/config:ro
-    restart: unless-stopped
-```
-
-Run with Docker Compose:
-
-```bash
-docker-compose up -d
-```
-
-### Kubernetes Deployment with Helm
-
-#### Prerequisites
-
-- Kubernetes cluster (1.19+)
-- Helm 3.x installed
-- kubectl configured to access your cluster
-
-#### Quick Start
-
-1. **Build and push your Docker image to a registry:**
-
-```bash
-# Build the image
-docker build -t your-registry/devops-logsense:0.1.0 .
-
-# Push to registry (Docker Hub, GCR, ECR, etc.)
-docker push your-registry/devops-logsense:0.1.0
-```
-
-2. **Install the Helm chart:**
-
-```bash
-# Install with default values (Kubernetes log collection only)
-helm install devops-logsense ./helm/devops-logsense \
-  --set image.repository=your-registry/devops-logsense \
-  --set image.tag=0.1.0
-
-# Install with custom values
-helm install devops-logsense ./helm/devops-logsense \
-  --set image.repository=your-registry/devops-logsense \
-  --set image.tag=0.1.0 \
-  --set ingress.enabled=true \
-  --set ingress.hosts[0].host=devops-logsense.yourdomain.com
-```
-
-3. **Access the application:**
-
-```bash
-# Port forward to access locally
-kubectl port-forward svc/devops-logsense 8080:80
-
-# Visit http://localhost:8080
-```
-
-#### Configuration Options
-
-Create a custom `values.yaml` file:
-
-```yaml
-# values-custom.yaml
-image:
-  repository: your-registry/devops-logsense
-  tag: 0.1.0
-
-replicaCount: 2
-
-service:
-  type: LoadBalancer  # or NodePort, ClusterIP
-
-ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-  hosts:
-    - host: devops-logsense.yourdomain.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: devops-logsense-tls
-      hosts:
-        - devops-logsense.yourdomain.com
-
-# Enable Kubernetes log collection (default)
-kubernetes:
-  enabled: true
-
-# Enable Docker log collection (requires host Docker socket)
-docker:
-  enabled: true
-  socketPath: /var/run/docker.sock
-  hostPath: /var/run/docker.sock
-
-# Enable Jenkins integration
-jenkins:
-  enabled: true
-  url: "http://jenkins.default.svc.cluster.local:8080"
-  username: "admin"
-  apiToken: "your-jenkins-api-token"
-
-# Enable AWS CloudWatch integration
-aws:
-  enabled: true
-  region: us-east-1
-  accessKeyId: "your-aws-access-key"
-  secretAccessKey: "your-aws-secret-key"
-
-resources:
-  limits:
-    cpu: 2000m
-    memory: 2Gi
-  requests:
-    cpu: 500m
-    memory: 1Gi
-
-autoscaling:
-  enabled: true
-  minReplicas: 2
-  maxReplicas: 10
-  targetCPUUtilizationPercentage: 70
-```
-
-Install with custom values:
-
-```bash
-helm install devops-logsense ./helm/devops-logsense -f values-custom.yaml
-```
-
-#### Helm Chart Management
-
-```bash
-# Upgrade the deployment
-helm upgrade devops-logsense ./helm/devops-logsense -f values-custom.yaml
-
-# Check deployment status
-helm status devops-logsense
-
-# List all releases
-helm list
-
-# Uninstall
-helm uninstall devops-logsense
-
-# Test the chart
-helm lint ./helm/devops-logsense
-helm template devops-logsense ./helm/devops-logsense
-
-# Package the chart
-helm package ./helm/devops-logsense
-```
-
-#### RBAC and Permissions
-
-The Helm chart automatically creates:
-
-1. **ServiceAccount**: For pod identity
-2. **ClusterRole**: With permissions to read:
-   - Pods and pod logs
-   - Events
-   - Namespaces
-   - Deployments, ReplicaSets, DaemonSets, StatefulSets
-3. **ClusterRoleBinding**: Binds the ClusterRole to the ServiceAccount
-
-This allows the application to collect logs from all namespaces in the cluster.
-
-For namespace-scoped permissions, modify `values.yaml`:
-
-```yaml
-rbac:
-  create: true
-  # Use Role instead of ClusterRole
-  clusterWide: false
-```
-
-#### Using with Different Registries
-
-**Docker Hub:**
-```bash
-docker build -t username/devops-logsense:0.1.0 .
-docker push username/devops-logsense:0.1.0
-
-helm install devops-logsense ./helm/devops-logsense \
-  --set image.repository=username/devops-logsense
-```
-
-**Google Container Registry (GCR):**
-```bash
-docker build -t gcr.io/project-id/devops-logsense:0.1.0 .
-docker push gcr.io/project-id/devops-logsense:0.1.0
-
-helm install devops-logsense ./helm/devops-logsense \
-  --set image.repository=gcr.io/project-id/devops-logsense
-```
-
-**AWS Elastic Container Registry (ECR):**
-```bash
-# Login to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
-
-docker build -t 123456789.dkr.ecr.us-east-1.amazonaws.com/devops-logsense:0.1.0 .
-docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/devops-logsense:0.1.0
-
-helm install devops-logsense ./helm/devops-logsense \
-  --set image.repository=123456789.dkr.ecr.us-east-1.amazonaws.com/devops-logsense
-```
-
-#### Troubleshooting
-
-```bash
-# View pod logs
-kubectl logs -f deployment/devops-logsense
-
-# Describe the deployment
-kubectl describe deployment devops-logsense
-
-# Check pod status
-kubectl get pods -l app.kubernetes.io/name=devops-logsense
-
-# Exec into pod for debugging
-kubectl exec -it deployment/devops-logsense -- sh
-
-# Check RBAC permissions
-kubectl auth can-i get pods --as=system:serviceaccount:default:devops-logsense
-
-# View Helm values
-helm get values devops-logsense
+http://localhost:3000
 ```
 
 ## Configuration
@@ -465,58 +218,390 @@ curl http://localhost:3000/api/analytics
 
 The analyzer uses pattern matching to identify and categorize errors:
 
-### Network Issues
-- Connection refused/timeout
-- DNS resolution failures
-- Socket hang up
+| Category | Detection Patterns |
+|----------|-------------------|
+| **Network Issues** | Connection refused/timeout, DNS failures, socket hang up |
+| **Permission Issues** | Access denied, Unauthorized (401, 403), Insufficient privileges |
+| **Resource Issues** | Out of memory (OOM), Disk space full, CPU throttling |
+| **Configuration Issues** | Invalid configuration, Missing env vars, Port conflicts |
+| **Security Issues** | Certificate errors (SSL/TLS), Security violations, Auth failures |
+| **Performance Issues** | Slow queries/responses, High latency, Deadlocks |
 
-### Permission Issues
-- Access denied
-- Unauthorized (401, 403)
-- Insufficient privileges
+---
 
-### Resource Issues
-- Out of memory (OOM)
-- Disk space full
-- CPU throttling
+## Deployment
 
-### Configuration Issues
-- Invalid configuration
-- Missing environment variables
-- Port conflicts
+### Docker Deployment
 
-### Security Issues
-- Certificate errors (SSL/TLS)
-- Security violations
-- Authentication failures
+#### Build the Docker Image
 
-### Performance Issues
-- Slow queries/responses
-- High latency
-- Deadlocks
+```bash
+docker build -t devops-logsense:latest .
+```
 
-## Future Enhancements
+#### Run with Docker
 
-- [ ] Database integration (PostgreSQL/MongoDB)
-- [ ] Real-time log streaming (WebSockets)
-- [ ] Advanced AI/ML models for anomaly detection
-- [ ] Alert notifications (Slack, Email, PagerDuty)
-- [ ] Log retention policies
-- [ ] Search and filtering capabilities
-- [ ] Export functionality (CSV, JSON)
-- [ ] User authentication and multi-tenancy
-- [ ] Historical trend analysis
-- [ ] Custom pattern definitions
+**Basic run:**
+```bash
+docker run -p 3000:3000 devops-logsense:latest
+```
 
-## Tech Stack
+**With environment variables:**
+```bash
+docker run -p 3000:3000 \
+  -e NODE_ENV=production \
+  -e JENKINS_URL=http://jenkins:8080 \
+  -e JENKINS_USERNAME=admin \
+  -e JENKINS_API_TOKEN=your-token \
+  -e AWS_REGION=us-east-1 \
+  -e AWS_ACCESS_KEY_ID=your-key \
+  -e AWS_SECRET_ACCESS_KEY=your-secret \
+  devops-logsense:latest
+```
 
-- **Frontend**: Next.js 16, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Integrations**: 
-  - Kubernetes Client (@kubernetes/client-node)
-  - Dockerode (Docker API)
-  - AWS SDK (CloudWatch Logs)
-  - Axios (Jenkins API)
+**With Docker socket access (for Docker log collection):**
+```bash
+docker run -p 3000:3000 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  devops-logsense:latest
+```
+
+**With kubeconfig (for local Kubernetes access):**
+```bash
+docker run -p 3000:3000 \
+  -v ~/.kube/config:/home/nextjs/.kube/config:ro \
+  devops-logsense:latest
+```
+
+#### Using Docker Compose
+
+The repository includes a `docker-compose.yml` file for easy deployment:
+
+```bash
+# Start the application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+```
+
+**Customize `docker-compose.yml`:**
+```yaml
+version: '3.8'
+
+services:
+  devops-logsense:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - JENKINS_URL=${JENKINS_URL}
+      - AWS_REGION=${AWS_REGION}
+    volumes:
+      # Uncomment for Docker log collection
+      # - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+```
+
+---
+
+### Kubernetes Deployment with Helm
+
+#### Prerequisites
+
+- Kubernetes cluster (1.19+)
+- Helm 3.x installed
+- kubectl configured to access your cluster
+- Container registry (Docker Hub, GCR, ECR, etc.)
+
+#### Step 1: Build and Push Docker Image
+
+**Docker Hub:**
+```bash
+docker build -t username/devops-logsense:0.1.0 .
+docker push username/devops-logsense:0.1.0
+```
+
+**Google Container Registry (GCR):**
+```bash
+docker build -t gcr.io/project-id/devops-logsense:0.1.0 .
+docker push gcr.io/project-id/devops-logsense:0.1.0
+```
+
+**AWS Elastic Container Registry (ECR):**
+```bash
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
+
+docker build -t 123456789.dkr.ecr.us-east-1.amazonaws.com/devops-logsense:0.1.0 .
+docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/devops-logsense:0.1.0
+```
+
+#### Step 2: Install the Helm Chart
+
+**Quick Install (Default Configuration):**
+```bash
+helm install devops-logsense ./helm/devops-logsense \
+  --set image.repository=your-registry/devops-logsense \
+  --set image.tag=0.1.0
+```
+
+**Install with Ingress:**
+```bash
+helm install devops-logsense ./helm/devops-logsense \
+  --set image.repository=your-registry/devops-logsense \
+  --set image.tag=0.1.0 \
+  --set ingress.enabled=true \
+  --set ingress.hosts[0].host=devops-logsense.yourdomain.com
+```
+
+**Install with Custom Values:**
+```bash
+# Copy the example values file
+cp helm/devops-logsense/values-example.yaml values-custom.yaml
+
+# Edit with your configuration
+vim values-custom.yaml
+
+# Install
+helm install devops-logsense ./helm/devops-logsense -f values-custom.yaml
+```
+
+#### Step 3: Access the Application
+
+**Port Forward (for local access):**
+```bash
+kubectl port-forward svc/devops-logsense 8080:80
+# Visit http://localhost:8080
+```
+
+**Using LoadBalancer:**
+```bash
+kubectl get svc devops-logsense
+# Use the EXTERNAL-IP to access
+```
+
+**Using Ingress:**
+```
+https://devops-logsense.yourdomain.com
+```
+
+#### Configuration Examples
+
+**Example 1: Production with Auto-Scaling**
+
+```yaml
+# values-production.yaml
+image:
+  repository: your-registry/devops-logsense
+  tag: 0.1.0
+
+replicaCount: 2
+
+service:
+  type: LoadBalancer
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: devops-logsense.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: devops-logsense-tls
+      hosts:
+        - devops-logsense.yourdomain.com
+
+kubernetes:
+  enabled: true
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+```
+
+**Example 2: All Integrations Enabled**
+
+```yaml
+# values-all-integrations.yaml
+image:
+  repository: your-registry/devops-logsense
+  tag: 0.1.0
+
+kubernetes:
+  enabled: true
+
+docker:
+  enabled: true
+  socketPath: /var/run/docker.sock
+  hostPath: /var/run/docker.sock
+
+jenkins:
+  enabled: true
+  url: "http://jenkins.default.svc.cluster.local:8080"
+  username: "admin"
+  apiToken: "your-jenkins-api-token"
+
+aws:
+  enabled: true
+  region: us-east-1
+  accessKeyId: "your-aws-access-key"
+  secretAccessKey: "your-aws-secret-key"
+```
+
+Install:
+```bash
+helm install devops-logsense ./helm/devops-logsense -f values-all-integrations.yaml
+```
+
+#### Helm Chart Management
+
+**Upgrade:**
+```bash
+helm upgrade devops-logsense ./helm/devops-logsense -f values-custom.yaml
+
+# Or upgrade just the image version
+helm upgrade devops-logsense ./helm/devops-logsense \
+  --reuse-values \
+  --set image.tag=0.2.0
+```
+
+**Status:**
+```bash
+helm status devops-logsense
+helm list
+```
+
+**Uninstall:**
+```bash
+helm uninstall devops-logsense
+```
+
+**Test & Validate:**
+```bash
+# Lint the chart
+helm lint ./helm/devops-logsense
+
+# Dry run
+helm install devops-logsense ./helm/devops-logsense \
+  --dry-run --debug \
+  -f values-custom.yaml
+
+# Test template rendering
+helm template devops-logsense ./helm/devops-logsense
+```
+
+#### RBAC and Permissions
+
+The Helm chart automatically creates:
+
+| Resource | Purpose |
+|----------|---------|
+| **ServiceAccount** | Unique identity for the application pods |
+| **ClusterRole** | Permissions to read pods, logs, events, and workloads |
+| **ClusterRoleBinding** | Binds the ClusterRole to the ServiceAccount |
+
+**Required Permissions:**
+- Read access to: `pods`, `pods/log`, `events`, `namespaces`
+- List/watch: `deployments`, `replicasets`, `daemonsets`, `statefulsets`
+
+**For namespace-scoped permissions:**
+```yaml
+rbac:
+  create: true
+  clusterWide: false  # Use Role instead of ClusterRole
+```
+
+#### Security Considerations
+
+**AWS Authentication (Recommended):**
+Use IRSA (IAM Roles for Service Accounts) instead of access keys:
+
+```yaml
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/devops-logsense-role
+
+aws:
+  enabled: true
+  region: us-east-1
+  # Don't set accessKeyId/secretAccessKey - use IRSA
+```
+
+**Docker Socket Access:**
+Enabling Docker log collection mounts the host Docker socket. Use with caution:
+
+```yaml
+docker:
+  enabled: true  # Only in trusted environments
+```
+
+**Secrets Management:**
+For production, use Kubernetes secrets or external secret managers:
+
+```bash
+kubectl create secret generic devops-logsense-secrets \
+  --from-literal=jenkins-api-token=your-token \
+  --from-literal=aws-secret-access-key=your-key
+```
+
+#### Troubleshooting
+
+**Check pod status:**
+```bash
+kubectl get pods -l app.kubernetes.io/name=devops-logsense
+```
+
+**View logs:**
+```bash
+kubectl logs -f deployment/devops-logsense
+```
+
+**Verify RBAC permissions:**
+```bash
+kubectl auth can-i get pods --as=system:serviceaccount:default:devops-logsense
+kubectl auth can-i get pods/log --as=system:serviceaccount:default:devops-logsense
+```
+
+**Describe resources:**
+```bash
+kubectl describe deployment devops-logsense
+kubectl describe ingress devops-logsense
+kubectl get events --sort-by='.lastTimestamp'
+```
+
+**Image pull issues:**
+```bash
+# Create image pull secret
+kubectl create secret docker-registry regcred \
+  --docker-server=your-registry \
+  --docker-username=your-username \
+  --docker-password=your-password
+
+# Update values.yaml
+imagePullSecrets:
+  - name: regcred
+```
+
+---
 
 ## Development
 
@@ -532,12 +617,28 @@ npm start
 
 # Lint code
 npm run lint
+
+# Format code
+npm run format
 ```
 
-## License
+## Future Enhancements
 
-MIT
+- [ ] Database integration (PostgreSQL/MongoDB)
+- [ ] Real-time log streaming (WebSockets)
+- [ ] Advanced AI/ML models for anomaly detection
+- [ ] Alert notifications (Slack, Email, PagerDuty)
+- [ ] Log retention policies
+- [ ] Search and filtering capabilities
+- [ ] Export functionality (CSV, JSON)
+- [ ] User authentication and multi-tenancy
+- [ ] Historical trend analysis
+- [ ] Custom pattern definitions
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT
