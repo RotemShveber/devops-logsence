@@ -3,9 +3,9 @@
 replicaCount: 1
 
 image:
-  repository: devops-logsense
+  repository: docker.io/rotemsh/devops-logsense
   pullPolicy: IfNotPresent
-  tag: "latest"
+  tag: "1.0.1"
 
 imagePullSecrets: []
 nameOverride: ""
